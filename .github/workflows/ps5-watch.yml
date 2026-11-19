@@ -2,7 +2,7 @@ name: PS5 restock watch
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # private repo? change to "*/30 * * * *" to stay within free minutes
+    - cron: "*/30 * * * *"
   workflow_dispatch:
     inputs:
       test_email:
@@ -19,12 +19,13 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
       GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
       NOTIFY_TO: ${{ secrets.NOTIFY_TO }}
+      CHROME_PATH: /usr/bin/google-chrome
     steps:
       - uses: actions/checkout@v4
 
@@ -34,9 +35,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
+        run: pip install -r requirements.txt
 
       # Caches are immutable, so each run saves under a new key and restores the newest one.
       - name: Restore last status
