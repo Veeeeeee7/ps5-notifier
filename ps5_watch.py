@@ -131,7 +131,7 @@ def check() -> tuple[str, str]:
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=True, executable_path=os.environ.get("CHROME_PATH") or None)
             try:
                 context = browser.new_context(
                     user_agent=USER_AGENT,
