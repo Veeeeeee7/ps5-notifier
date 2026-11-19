@@ -1,0 +1,55 @@
+name: PS5 restock watch
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # private repo? change to "*/30 * * * *" to stay within free minutes
+  workflow_dispatch:
+    inputs:
+      test_email:
+        description: "Send a test email"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ps5-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      NOTIFY_TO: ${{ secrets.NOTIFY_TO }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      # Caches are immutable, so each run saves under a new key and restores the newest one.
+      - name: Restore last status
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: ps5-state-${{ github.run_id }}
+          restore-keys: ps5-state-
+
+      - name: Send test email
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.test_email }}
+        run: python ps5_watch.py --test-email
+
+      - name: Check page
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.test_email) }}
+        run: python ps5_watch.py
